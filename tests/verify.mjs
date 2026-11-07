@@ -1,0 +1,47 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import vm from 'node:vm';
+import {createRequire} from 'node:module';
+import {execFileSync} from 'node:child_process';
+import {serve} from './preview-server.mjs';
+const require=createRequire(import.meta.url);
+const current=require('../atlas-current.js');
+const html=await fs.readFile(new URL('../index.html',import.meta.url),'utf8');
+const parse=s=>JSON.parse(s.match(/const DATA = ([\s\S]*?);<\/script>/)[1]);
+const data=parse(html),original=parse(execFileSync('git',['show','9f3bdae0476bb8b24be6f2a5fbcdb40129f33fca:index.html'],{encoding:'utf8'}));
+assert.deepEqual(current.counts(data.skills),{files:201,uniqueNames:200,reviewed:40});
+assert.deepEqual(data.skills.slice(0,195),original.skills);assert.deepEqual(data.sources,original.sources);assert.deepEqual(data.article,original.article);
+assert.deepEqual(current.counts([...data.skills,{name:'test-only',reviewed:true}]),{files:202,uniqueNames:201,reviewed:41});
+assert.equal(Object.keys(current.macFiles).length,37);assert.equal(Object.keys(current.windowsFiles).length,0);
+for(const s of data.skills)assert.equal(current.presence(s.name,'windows').state,'unknown');
+assert.equal(current.presence('missing-test','mac').state,'unknown');
+assert.equal(Object.keys(current.validationRecords).length,4);
+for(const entry of Object.values(current.macFiles).flat()){assert.match(entry.sha256,/^[0-9a-f]{64}$/);assert.equal(entry.checkedAt,'2026-11-08');assert.ok(!entry.location.includes('/Users/'));}
+for(const task of current.tasks){assert.ok(task.skills.every(n=>data.skills.some(s=>s.name===n)));assert.ok(current.prompt(task).includes('[실제 경로 입력]'));}
+for(const script of html.matchAll(/<script>([\s\S]*?)<\/script>/g))new vm.Script(script[1]);
+new vm.Script(await fs.readFile(new URL('../atlas-ui.js',import.meta.url),'utf8'));
+const pw=process.env.PLAYWRIGHT_MODULE||'playwright';
+const {chromium}=await import(pw);
+const server=await serve();const url='http://127.0.0.1:'+server.address().port;
+const browser=await chromium.launch({headless:true});const context=await browser.newContext({viewport:{width:1440,height:1000},permissions:['clipboard-read','clipboard-write']});
+const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
+let checks=0;const check=async(name,fn)=>{await fn();checks++;console.log('PASS '+name);};
+const visible=selector=>page.locator(selector).isVisible();
+try{
+await page.goto(url);
+await check('default task picker and six choices',async()=>{assert.ok(await visible('#workflows'));assert.equal(await page.locator('.task-choice').count(),6);assert.equal(await visible('#overview'),false);});
+await check('UI task opens skills and checks immediately',async()=>{await page.locator('[data-workflow="ui"]').click();assert.equal(new URL(page.url()).hash,'#workflows/ui');assert.equal(await visible('#workflow-picker'),false);assert.equal(await page.locator('.workflow-skill').count(),3);assert.equal(await page.locator('[data-workflow-check]').count(),3);assert.ok(await page.locator('#workflow-title').evaluate(e=>document.activeElement===e));});
+await check('copy directive and local checklist persistence',async()=>{await page.locator('#copy-workflow').click();const text=await page.evaluate(()=>navigator.clipboard.readText());assert.ok(text.includes('화면·동선'));assert.ok(text.includes('검수')&&text.includes('[실제 경로 입력]'));await page.locator('[data-workflow-check="0"]').check();await page.reload();assert.ok(await page.locator('[data-workflow-check="0"]').isChecked());assert.equal(await page.evaluate(()=>ATLAS_CURRENT.validation('offers').state),'unknown');});
+await check('change task, browser back and deep link',async()=>{await page.locator('#workflow-reset').click();await page.locator('[data-workflow="offer"]').click();assert.ok((await page.locator('#workflow-plan').innerText()).includes('copywriting'));await page.goBack();assert.ok(await visible('#workflow-picker'));await page.goBack();assert.equal(await page.locator('#workflow-title').innerText(),'화면·동선 다듬기');await page.goto(url+'/#workflows/lesson');assert.equal(await page.locator('#workflow-title').innerText(),'수업·과정 설계하기');});
+await check('duplicate comparison and each original preserved',async()=>{await page.locator('#workflow-plan [data-skill="family:source-to-memory"]').click();assert.ok(await visible('#skill-dialog'));assert.equal(await page.locator('.copy-comparison article').count(),2);assert.ok((await page.locator('.copy-policy').innerText()).includes('AGENTS.md'));await page.locator('.copy-comparison button').first().click();assert.ok((await page.locator('#dialog-body').innerText()).includes('86줄'));await page.keyboard.press('Escape');assert.equal(await visible('#skill-dialog'),false);});
+await page.locator('[data-view="library"]').click();
+await check('new six registrations searchable, dates and evidence visible',async()=>{for(const name of current.registrations){await page.locator('#search').fill(name);assert.equal(await page.locator('.skill-card[data-skill="local-'+name+'"]').count(),1);}await page.locator('.skill-card[data-skill="local-gfield-skill-curator"]').click();assert.ok((await page.locator('#dialog-body').innerText()).includes('2026-11-08'));assert.ok((await page.locator('#dialog-body').innerText()).includes('Windows'));await page.keyboard.press('Escape');await page.locator('#search').fill('');assert.equal(await page.locator('.skill-card').count(),201);assert.equal(await page.locator('#reviewed-count').innerText(),'40');});
+await check('device and validation filters never invent Windows state',async()=>{await page.locator('#device-filter').selectOption('mac-observed');assert.equal(await page.locator('.skill-card').count(),37);await page.locator('#device-filter').selectOption('windows-observed');assert.equal(await page.locator('.skill-card').count(),0);await page.locator('#device-filter').selectOption('windows-unknown');assert.equal(await page.locator('.skill-card').count(),201);await page.locator('#device-filter').selectOption('all');await page.locator('#validation-filter').selectOption('scoped');assert.equal(await page.locator('.skill-card').count(),4);await page.locator('#validation-filter').selectOption('all');});
+await check('existing views, priorities and download remain usable',async()=>{for(const name of ['overview','recommendations','areas','roadmap','library']){await page.locator(`[data-view="${name}"]`).click();assert.ok(await visible('#'+name));}await page.locator('[data-view="roadmap"]').click();await page.locator('[data-action]').first().click();const before=await page.evaluate(()=>localStorage.getItem('skill-atlas-priorities-v1'));await page.reload();assert.equal(await page.evaluate(()=>localStorage.getItem('skill-atlas-priorities-v1')),before);const downloadPromise=page.waitForEvent('download');await page.locator('#download-plan').click();assert.ok((await downloadPromise).suggestedFilename().includes('우선순위'));});
+await check('clipboard failure offers selectable text',async()=>{await page.goto(url+'/#workflows/ui');await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{value:{writeText:()=>Promise.reject(Error('test'))},configurable:true}));await page.locator('#copy-workflow').click();assert.ok(await visible('#workflow-copy-fallback'));assert.ok((await page.locator('#workflow-copy-fallback').inputValue()).includes('검수'));});
+await fs.mkdir(new URL('../output/',import.meta.url),{recursive:true});
+await check('desktop, 390px and 320px layout, modal and controls',async()=>{for(const width of [1440,390,320]){await page.setViewportSize({width,height:1000});await page.goto(url);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await page.screenshot({path:new URL(`../output/atlas-${width}-picker.png`,import.meta.url).pathname,fullPage:true});await page.locator('[data-workflow="ui"]').click();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);for(const sel of ['#workflow-reset','#copy-workflow','#save-workflow'])assert.ok((await page.locator(sel).boundingBox()).height>=44);await page.screenshot({path:new URL(`../output/atlas-${width}-plan.png`,import.meta.url).pathname,fullPage:true});await page.locator('#workflow-plan [data-skill="local-ui-ux-pro-max"]').click();assert.ok(await visible('#skill-dialog'));assert.equal(await page.locator('#skill-dialog').evaluate(e=>e.scrollWidth>e.clientWidth),false);assert.ok((await page.locator('.dialog-close').boundingBox()).height>=44);await page.keyboard.press('Escape');await page.locator('[data-view="library"]').click();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);}});
+await check('keyboard task activation and print state',async()=>{await page.goto(url);await page.locator('[data-workflow="paper"]').focus();await page.keyboard.press('Enter');assert.equal(await page.locator('#workflow-title').innerText(),'교재·모의고사 만들기');await page.emulateMedia({media:'print'});assert.equal(await visible('.workflow-actions'),false);assert.ok(await visible('#workflow-plan'));await page.emulateMedia({media:'screen'});});
+assert.deepEqual(errors,[]);
+console.log(JSON.stringify({date:'2026-11-08',checks,counts:current.counts(data.skills),macNames:37,windows:'unknown',consoleErrors:errors.length}));
+}finally{await browser.close();server.close();}

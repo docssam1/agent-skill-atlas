@@ -1,0 +1,29 @@
+{
+  "date": "2026-11-08",
+  "environment": "Mac / Codex desktop / headless Chromium",
+  "browserScenarios": 11,
+  "browserScenariosPassed": 11,
+  "consoleErrors": 0,
+  "widths": [
+    1440,
+    390,
+    320
+  ],
+  "counts": {
+    "documents": 201,
+    "uniqueNames": 200,
+    "bodyReviewed": 40
+  },
+  "originalDocumentsPreserved": 195,
+  "originalSourcesPreserved": true,
+  "macFileNamesObserved": 37,
+  "windows": "unknown",
+  "skillsInstalled": 0,
+  "paidModelCalls": 0,
+  "limitations": [
+    "Windows runtime not checked",
+    "screen reader not tested",
+    "physical printer not tested",
+    "skill body review does not imply runtime validation"
+  ]
+}
