@@ -81,3 +81,10 @@ html{scroll-padding-top:24px}
 @media(max-width:350px){.task-picker{grid-template-columns:1fr}.task-choice{min-height:116px}.navbtn{font-size:11px}.navbtn svg{width:12px;height:12px}.nav-feature-label{font-size:11px}.topbar>div{font-size:11px}.topbar .text-button{font-size:11px}.workflow-heading h1{font-size:25px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
 @media print{[hidden].view{display:block!important}.task-picker,.workflow-heading>button,.workflow-actions,.current-record button,.workflow-checks input,.workflow-copy-status,.workflow-copy-fallback,.library-tools,.duplicate-note button{display:none!important}.workflow-columns{grid-template-columns:1fr 1fr}.workflow-skill{break-inside:avoid}.workflow-heading h1{font-size:24px}.workflow-presence{font-size:11px}.workflow-plan{font-size:12px}.workflow-plan h2{font-size:16px}}
+.atlas-references{margin-top:32px;padding-top:24px;border-top:1px solid var(--line)}
+.atlas-references h2{font-size:20px}.atlas-references>p{font-size:14px;color:var(--muted);margin:10px 0 20px}
+.reference-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.reference-card{display:flex;flex-direction:column;gap:10px;text-align:left;padding:20px;background:#fff;border:1px solid var(--line);border-radius:6px;min-width:0;overflow-wrap:anywhere}
+.reference-card:hover{border-color:var(--purple)}.reference-card strong{font-size:16px}.reference-card p{font-size:14px;color:var(--muted);line-height:1.7}.reference-card small{font-size:12px;color:#686078;line-height:1.7}
+.history-link{font-size:13px;line-height:1.8;color:var(--muted);margin:24px 0}.history-link a{text-decoration:underline;color:#543b8c;text-underline-offset:4px}
+@media(max-width:1180px){.reference-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.reference-grid{grid-template-columns:1fr}}

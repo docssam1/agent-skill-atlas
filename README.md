@@ -14,9 +14,9 @@ node tests/preview-server.mjs
 
 ## 기록을 읽는 법
 
-- 등록 목록: 201개 문서, 이름 200종. `DATA.skills`에서 자동 계산합니다.
-- 본문 선별 검토: 40개. 실제 실행 성공과 다른 지표입니다.
-- Mac 파일 확인: 2026-11-08에 같은 이름 37종의 파일 경로·SHA-256을 확인했습니다. 현재 제공되는 정확한 사본과 초기 목록 본문의 일치는 별도 확인이 필요합니다.
+- 등록 목록: 204개 문서, 이름 203종. `DATA.skills`에서 자동 계산합니다.
+- 본문 선별 검토: 43개. 실제 실행 성공과 다른 지표입니다.
+- Mac 파일 확인: 2026-11-08에 같은 이름 38종의 파일 경로·SHA-256을 확인했습니다. 현재 제공되는 정확한 사본과 초기 목록 본문의 일치는 별도 확인이 필요합니다.
 - Windows: 이번에 대조하지 않았으므로 미확인입니다. 설치되지 않았다는 뜻이 아닙니다.
 - 적용 검수: 기록이 있는 네 스킬만 날짜·프로젝트·검사 범위를 표시합니다. 다른 과업의 성공이나 학습 효과를 보장하지 않습니다.
 
@@ -27,9 +27,12 @@ node tests/preview-server.mjs
 - `index.html`: 기존 목록·비교·근거와 화면 진입점
 - `atlas-current.js`: 이번 등록, 파일 관측, 범위가 있는 검수 기록, 작업별 절차
 - `atlas-ui.js` / `atlas-ui.css`: 작업 선택·상태·사본 비교 화면
+- `atlas-history.js` / `atlas-history-ui.js`: 기존 공개본의 추가 스킬 근거·디자인 참고자료·미설치 외부 스킬
+- `references/previous-map-v9.html`: 이전 공개본 보존. 당시 상태이며 최신 목록과 구분
+- `build.mjs` / `.openai/hosting.json`: 기존 Sites Worker 빌드와 사이트 식별자
 - `docs/`: 변경 기준·확인 기록·인수인계
 
-스킬 설치, 자동 스캔, AI API 실행, 인증 동기화 기능은 없습니다. 현재 저장소에는 공개 호스팅 설정이 없습니다.
+스킬 설치, 자동 스캔, AI API 실행, 인증 동기화 기능은 없습니다. 공개 사이트는 https://agent-skill-atlas.docssam1.chatgpt.site 입니다. GitHub와 별도로 관리되던 Sites 소스를 회수했고, 같은 project_id와 공개 범위를 유지합니다. `.openai/hosting.json`의 기존 Worker 구성을 사용하며 `node build.mjs`가 HTML·CSS·JS·보존 기록의 정해진 경로만 제공합니다. 인증·테스트·Git 파일은 제공하지 않습니다.
 
 ## 검증
 
@@ -40,3 +43,5 @@ PLAYWRIGHT_MODULE=/absolute/path/to/playwright/index.mjs node tests/verify.mjs
 ```
 
 등록 집계, 기존 195문서·출처 보존, 기기·검수 필터, 작업 전환·뒤로가기·직접 주소, 복사·대체 복사, 체크 메모, 사본 비교, 기존 메뉴·저장, 1440/390/320px 화면과 키보드·인쇄 상태를 확인합니다. 스크린샷과 로그는 `output/`에 생성되며 Git에는 포함하지 않습니다.
+
+기존 공개본에서 Taste 2개와 gfield-clarify 1개의 당시 기록을 회수했습니다. 이 세 문서를 포함해 204문서·203종이며 디자인 참고자료15곳과 미설치 Impeccable은 집계에서 제외합니다. 이 기록 회수는 새 설치가 아닙니다.
